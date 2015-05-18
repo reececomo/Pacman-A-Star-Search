@@ -5,3 +5,5 @@ bin\
 *.class
 highscore.txt
 \sounds
+src/*.class
+src/META*

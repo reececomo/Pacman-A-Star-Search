@@ -1,9 +1,8 @@
-
 /**
  * Write a description of class PacMan here.
  * 
- * @author (your name) 
- * @version (a version number or a date)
+ * @author Reece Notargiacomo
+ * @version 19th May 2015
  */
 
 import java.awt.Point;
@@ -22,7 +21,7 @@ public class PacMan
     
     public enum Mode {CONTROLLED, AUTONOMOUS};
     
-    public static final int[] SPEED={0,1,2,4,8,16,32};
+    public static final int[] SPEED = {0,1,2,4,8,16,32};
       
       /*
        * The SPEED indicates the legal speed, representing how many pixels the center of Pac-Man or the ghost moves per frame. 
@@ -31,6 +30,8 @@ public class PacMan
        */
       
     public PacMan(Point pos){
+
+        System.out.println("Hello");
         
         /*
         * creates a Pac-Man with an initial position, and sets its 
@@ -51,6 +52,7 @@ public class PacMan
     public PacMan(Point pos, Ghost.Orientation ori, int speed, Mode m) {
         //creates a ghost with client specified position, orientation, speed, and mode. 
         
+        System.out.println("Hello");
         PacmanPosition = pos;
         PacmanOrientation = ori;
         setMode(m);
@@ -61,10 +63,7 @@ public class PacMan
         OriginalOrientation = PacmanOrientation;
     }
     
-    public int getSpeed(){
-        //returns the travelling speed of Pac-Man.
-        return PacmanSpeed;
-    }
+    public int getSpeed() { return PacmanSpeed; }
     
     public void setSpeed(int newSpeed){
         //changes the travelling speed to newSpeed.

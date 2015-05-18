@@ -7,6 +7,7 @@
  */
 import java.awt.Point;
 import java.awt.Color;
+
 public class GameTester
 {
 
