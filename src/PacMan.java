@@ -30,8 +30,6 @@ public class PacMan
        */
       
     public PacMan(Point pos){
-
-        System.out.println("Hello");
         
         /*
         * creates a Pac-Man with an initial position, and sets its 
@@ -84,10 +82,10 @@ public class PacMan
         }
     }
     
-    public void setMode(Mode m){
+    public void setMode(Mode mode){
         //changes the mode to m. Again your code should ensure consistencies between the input.
         //??
-        PacmanMode = m;
+        PacmanMode = mode;
     }
     
     public Ghost.Orientation getOrientation(){ 
