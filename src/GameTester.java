@@ -24,10 +24,10 @@ public class GameTester
         int[][] scatterTargets = {{3,6},{24,6},{3,31},{24,31}};
 
         Color[] colours = new Color[4];
-        colours[0] = new Color(255,0,0);
-        colours[1] = new Color(255,0,255);
-        colours[2] = new Color(24,164,31);
-        colours[3] = new Color(231,143,24);
+        colours[0] = new Color(255,0,0); //red
+        colours[1] = new Color(255,0,255); //pink
+        colours[2] = new Color(24,164,31); //green
+        colours[3] = new Color(231,143,24); //orange
         
         createGhosts(ghosts, 13, 14, scatterTargets, colours);
        
