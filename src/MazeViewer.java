@@ -83,7 +83,7 @@ public class MazeViewer
         c.drawString("Ready?", (int) (rows*CELL_SIZE/2-CELL_SIZE*3.1), cols*CELL_SIZE/2);
         drawScore();
         
-        gameTimer = new Timer(60, nextFrame);
+        gameTimer = new Timer(15, nextFrame);
         deathTimer = new Timer(10, drawPacmanDeath);
         
         gameTimer.setInitialDelay(200); //between drawing everything and letting pacman move

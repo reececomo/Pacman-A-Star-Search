@@ -2,13 +2,14 @@
 /**
  * Write a description of class Ghost here.
  * 
- * @author (your name) 
- * @version (a version number or a date)
+ * @author Reece Como (21108155)
+ * @version Monday 25th May
  */
 
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map.Entry;
 
 public class Ghost
@@ -25,7 +26,7 @@ public class Ghost
     private boolean         dead;
     private PacMan          pacman = null;
     private Point           pacmanpos;
-    private java.awt.Color  pink;
+    private java.awt.Color  pink,red;
     
     private int             GhostSpeed;
 
@@ -45,6 +46,8 @@ public class Ghost
     // Reece choking AI
     private int[][]         globalmaze;
     private Point[]         chokepoints;
+    private Point           lastTarget;
+    private Point           currentTarget;
     private ArrayList<Point> current_path;
     
     /*
@@ -76,6 +79,7 @@ public class Ghost
         OriginalPosition = GhostPosition;
         PreviousMode = GhostMode;
         pink = new java.awt.Color(255,0,255);
+        red = new java.awt.Color(255,0,0);
     }
     
     public Ghost(java.awt.Point pos, java.awt.Color colour, Orientation ori, int speed, Mode m, Target t, int[] scatterTarget) {
@@ -252,11 +256,7 @@ public class Ghost
         if(globalmaze==null) {
             globalmaze = calculateMaze(maze);
             chokepoints = getIntersections(globalmaze);
-        }
-
-        current_path = astar(chokepoints[0]);
-        for(Point xy : current_path) {
-            System.out.println(xy.x+", "+xy.y);
+            current_path = new ArrayList<Point>();
         }
 
         //automatically moves the ghost in the user specified maze to the next position with proper orientation.
@@ -291,21 +291,34 @@ public class Ghost
                         //random from possible directions
                         GhostOrientation = possibleChoices[(int) (Math.random()*possibleChoices.length)];
                         break;
-                    
-                    case SCATTER: 
-                        //follow scatter target
-                        GhostOrientation = targetDirection(scatter_target, maze, true);
+
+                    case SCATTER:
+                        // If not red or pink then hunt!
+                        if(!GhostColour.equals(pink)&&!GhostColour.equals(red)) {
+                            // Hunt pacman
+                            GhostOrientation = targetDirectionAStar(getGridPosition(pacmanpos),maze);
+                            current_path.clear();
+                            break;
+                        }
+
+                    case CHASE:
+                        // Pink does the opposite to everyone else
+                        if(GhostColour.equals(pink) && GhostMode==Mode.CHASE) {
+                            GhostOrientation = targetDirection(getGridPosition(pacmanpos),maze);
+                            break;
+                        }
+                        if(GhostColour.equals(red) && GhostMode==Mode.CHASE) {
+                            GhostOrientation = targetDirectionAStar(getGridPosition(pacmanpos),maze);
+                            break;
+                        }
+
+                        // Go to nearest chokepoints
+                        if(currentTarget==null || current_path.size() == 0)
+                            currentTarget = getNearestChokePoint(getGridPosition(pacmanpos));
+                        GhostOrientation = targetDirectionAStar(currentTarget,maze);
+
                         break;
                     
-                    case CHASE:
-                        if(GhostTarget == Target.PACMAN){
-                            //follow pacman
-                            GhostOrientation = targetDirection(maze.getPacMan().getPosition(), maze);
-                        } else {
-                            //offset
-                            System.out.println("This never gets called");
-                            GhostOrientation = targetDirection(offset(maze.getPacMan().getPosition(),maze.getPacMan().getOrientation()), maze);
-                        }
                 }
             }
 
@@ -340,24 +353,77 @@ public class Ghost
         return targetDirection(target, maze, false);
     }
 
+    private Point getNearestValidPoint(Point toHere) {
+        ArrayList<Point> opt = neighbour_nodes(toHere, null);
+        if(opt.size()>0)
+            return opt.get(0);
+        else
+            return getGridPosition(pacmanpos);
+    }
+
     private Point getNearestChokePoint(Point pacman) {
         ArrayList<Point> candidates = new ArrayList<Point>();
+        Point pos = getGridPosition();
 
         // Ghost is on opposite side
         // Pacman cant beat the ghost there
         for(Point chokepoint : chokepoints) {
-            // If pacman 
-            if(pacman.x > 1) {
-
+            // If pacman is on opposite side
+            if((pacman.x > chokepoint.x && chokepoint.x > pos.x)
+            ||(pacman.x < chokepoint.x && chokepoint.x < pos.x)&&
+            (pacman.y > chokepoint.y && chokepoint.y > pos.y)
+            ||(pacman.y > chokepoint.y && chokepoint.y > pos.y)){
+                //int ghostdist = heuristic(chokepoint,pos);
+                //int pacmandist = heuristic(pacman,pos);
+                candidates.add(chokepoint);
             }
         }
 
-        return new Point();
+        int rand = (int) Math.round(Math.random() * (candidates.size() - 1));
+        if(candidates.size()>0)
+            return candidates.get(rand);
+        else{
+            rand = (int) Math.round(Math.random() * (chokepoints.length - 1));
+            return chokepoints[rand];
+        }
     }
 
-    private Orientation targetDirection(ArrayList<Point> steps) {
+    private Orientation targetDirectionAStar(Point dest, Maze maze) {
+        Orientation[] opts = getOrientations(maze);
+        Orientation next_move = opts[0];
 
-        return Orientation.LEFT;
+        // If no path
+        if(current_path.size()==0)
+            current_path = astar(getGridPosition(),GhostOrientation,dest);
+
+        if(current_path.size()==1 && getGridPosition().equals(dest)) {
+            lastTarget = dest;
+            current_path.clear();
+        }
+
+        for(int i = 0; i < current_path.size() - 1 ; i++) {
+            Point nextSpot = current_path.get(i+1);
+
+            if(current_path.get(i).equals(getGridPosition())) {
+                next_move = getOrientationFrom(getGridPosition(),nextSpot);
+                current_path.remove(i);
+                break;
+            }else{
+                if(!nextSpot.equals(getGridPosition())) 
+                    current_path.clear();
+            }
+        }
+
+        if(current_path.size()==0) {
+            // No direction? Go random!
+            int random_direction = (int) Math.round(Math.random() * (opts.length - 1));
+            next_move = opts[random_direction];
+        }
+                
+        if(validChange(next_move))
+            return next_move;
+        else
+            return opts[0]; // error case
     }
     
     private Orientation targetDirection(Point target, Maze maze, boolean doScale){
@@ -379,20 +445,14 @@ public class Ghost
 
         //find path that gets you shortest manhattan distance
         for(int i = 0; i < possibleOrientations.length; i++) {
-
             Point other_move = getGridPosition(nextPos(GhostPosition,possibleOrientations[i]));
-
             // Set target to pacman if chasing
             if(GhostMode == Mode.CHASE && !dead)
                 target = getGridPosition(nextPacmanPos());
 
             int tempDist = Math.abs(target.x - other_move.x) + Math.abs(target.y - other_move.y);
             
-            // If this distance is better
-            if(tempDist == bestDist && (int)(Math.random() * (2)) == 1) {
-                //nextOrientation = possibleOrientations[i];
-            } //else
-                if(tempDist <= bestDist){
+                if(tempDist < bestDist){
                     bestDist = tempDist;
                     nextOrientation = possibleOrientations[i];
                 }
@@ -416,8 +476,6 @@ public class Ghost
         return position;
     }
     private Point nextPacmanPos() {
-        //System.out.println(GhostPosition.x+", "+GhostPosition.y);
-        //System.out.println(pacmanpos.x+", "+pacmanpos.y);
         Point position = new Point(pacmanpos); //translate copy of point
         int dist = pacman.getSpeed()/(MazeViewer.CELL_SIZE/2);
 
@@ -453,16 +511,15 @@ public class Ghost
     /*
      *  A-Star algorithm
      */
-    private ArrayList<Point> astar(Point goal) {
+    private ArrayList<Point> astar(Point start, Orientation startOri, Point goal) {
         // ClosedSet, OpenSet and Path
         HashMap<Point,Integer> openSet = new HashMap<Point,Integer>();
         HashMap<Point,Integer> g_score = new HashMap<Point,Integer>();
         HashMap<Point,Point> came_from = new HashMap<Point,Point>();
         HashMap<Point,Orientation> coming_from = new HashMap<Point,Orientation>();
         ArrayList<Point> closedSet = new ArrayList<Point>();
-        
-        Point start = getGridPosition();
-        coming_from.put(start,GhostOrientation);
+
+        coming_from.put(start,startOri);
 
         g_score.put(start,0); // start g score = 0;
         openSet.put(start,heuristic(start,goal)); // 0 + heuristic;
@@ -503,6 +560,16 @@ public class Ghost
         return new ArrayList<Point>();
     }
 
+    private boolean validChange(Orientation newOri) {
+        if((newOri == Orientation.LEFT && GhostOrientation == Orientation.RIGHT)
+        ||(newOri == Orientation.RIGHT && GhostOrientation == Orientation.LEFT)
+        ||(newOri == Orientation.UP && GhostOrientation == Orientation.DOWN)
+        ||(newOri == Orientation.DOWN && GhostOrientation == Orientation.UP))
+            return false;
+
+        return true;
+    }
+
     private Orientation getOrientationFrom(Point nEW, Point old) {
         if (nEW.x == old.x - 1)
             return Orientation.RIGHT;
@@ -513,7 +580,7 @@ public class Ghost
         if (nEW.y == old.y - 1)
             return Orientation.DOWN;
 
-        return null;
+        return Orientation.LEFT;
     }
 
     private ArrayList<Point> neighbour_nodes(Point p, Orientation coming_from) {
@@ -560,6 +627,7 @@ public class Ghost
     }
 
     private ArrayList<Point> reconstruct_path(HashMap<Point,Point> came_from, Point current) {
+        System.out.println("A-Star: Found path!");
         ArrayList<Point> total_path = new ArrayList<Point>();
         total_path.add(current);
 
@@ -567,10 +635,15 @@ public class Ghost
             current = came_from.get(current);
             total_path.add(current);
         }
-
+        Collections.reverse(total_path);
         return total_path;
     }
 
+    private void print_path(ArrayList<Point> path) {
+        for(Point node : path) {
+            System.out.println(node.x+", "+node.y);
+        }
+    }
     
     private Point offset(Point positioncopy, Orientation ori){
         Point position = new Point(positioncopy); //translate copy of point
