@@ -41,7 +41,7 @@ public class PacMan
         PacmanPosition = pos;
         PacmanOrientation = Ghost.Orientation.UP;
         nextOrientation = PacmanOrientation;
-        PacmanMode = Mode.CONTROLLED;      
+        PacmanMode = Mode.AUTONOMOUS;      
         setSpeed(MazeViewer.CELL_SIZE);
         OriginalPosition = PacmanPosition;
         OriginalOrientation = PacmanOrientation;
